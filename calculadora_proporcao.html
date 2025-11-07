@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora de Proporção</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1120;--accent:#60a5fa;--muted:#94a3b8;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; min-height:100vh; background:linear-gradient(180deg,#071029 0%, #071b2b 60%); color:#e6eef8; display:flex; align-items:center; justify-content:center; padding:28px}
+    .card{width:940px; max-width:100%; background:var(--card); border-radius:14px; padding:22px; box-shadow:0 6px 30px rgba(2,6,23,0.6);}
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0 0 18px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=number], input[type=text], select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:15px}
+    .row{display:flex;gap:10px}
+    .btn{background:linear-gradient(90deg,var(--accent),#3b82f6);border:none;padding:10px 14px;border-radius:10px;color:#022;cursor:pointer;font-weight:600}
+    .outline{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px}
+    .result{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);}
+    .muted{color:var(--muted);font-size:13px}
+    .swap{cursor:pointer;background:transparent;border:0;color:var(--accent);font-weight:700}
+    .small{font-size:13px}
+    footer{margin-top:14px;color:var(--muted);font-size:13px}
+    @media (max-width:720px){.grid{grid-template-columns:1fr}} 
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <h1>Calculadora de Proporção</h1>
+    <p class="lead">Insira a largura e altura originais para obter a proporção (W:H). Depois informe apenas um novo valor (largura ou altura) para calcular o outro mantendo a proporção.</p>
+
+    <div class="grid" style="margin-bottom:12px">
+      <div>
+        <label for="origW">Largura original (W)</label>
+        <input id="origW" type="number" min="0" step="any" placeholder="Ex: 1920" />
+      </div>
+      <div>
+        <label for="origH">Altura original (H)</label>
+        <input id="origH" type="number" min="0" step="any" placeholder="Ex: 1080" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:12px">
+      <button id="calcRatio" class="btn">Calcular proporção</button>
+      <button id="clear" class="outline">Limpar</button>
+      <button id="swapWH" class="swap" title="Inverter W↔H">Inverter W ↔ H</button>
+    </div>
+
+    <div class="result" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="muted">Proporção simplificada</div>
+          <div id="ratioSimple" style="font-size:18px;font-weight:700">—</div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">Proporção decimal</div>
+          <div id="ratioDecimal" style="font-weight:700">—</div>
+        </div>
+      </div>
+      <div style="margin-top:8px" class="muted small">Você pode usar essa proporção para redimensionar mantendo as mesmas proporções.</div>
+    </div>
+
+    <h2 style="font-size:16px;margin:12px 0 8px">Redimensionar a partir de um único valor</h2>
+    <p class="muted small">Escolha qual valor você quer informar e o campo oposto será calculado automaticamente.</p>
+
+    <div class="grid" style="align-items:end">
+      <div>
+        <label>Modo</label>
+        <select id="mode">
+          <option value="width">Informar largura → calcular altura</option>
+          <option value="height">Informar altura → calcular largura</option>
+        </select>
+      </div>
+      <div>
+        <label for="precision">Precisão / casas decimais</label>
+        <select id="precision">
+          <option value="0">Inteiro (0 casas)</option>
+          <option value="1">1 casa decimal</option>
+          <option value="2" selected>2 casas decimais</option>
+          <option value="3">3 casas decimais</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:10px">
+      <div>
+        <label for="newW">Nova largura (W)</label>
+        <input id="newW" type="number" step="any" placeholder="Preencha se modo = largura" />
+      </div>
+      <div>
+        <label for="newH">Nova altura (H)</label>
+        <input id="newH" type="number" step="any" placeholder="Preencha se modo = altura" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <button id="apply" class="btn">Calcular</button>
+      <button id="copyRatio" class="outline">Copiar proporção</button>
+    </div>
+
+    <div id="finalResult" class="result" style="margin-top:12px;display:none">
+      <div id="finalText" style="font-weight:700"></div>
+      <div id="finalNote" class="muted small" style="margin-top:6px"></div>
+    </div>
+
+    <footer>Arquivo single‑page — copie o HTML ou salve como <code>calculadora_proporcao.html</code>.</footer>
+  </div>
+
+  <script>
+    // util: gcd for simplifying integers (works for floats by scaling)
+    function gcd(a,b){a=Math.abs(a);b=Math.abs(b); if(!isFinite(a)||!isFinite(b))return 1; if(a===0) return b; if(b===0) return a; // scale if decimals
+      const strA = String(a), strB = String(b);
+      const decA = (strA.includes('.')? strA.split('.')[1].length:0);
+      const decB = (strB.includes('.')? strB.split('.')[1].length:0);
+      const scale = Math.pow(10, Math.max(decA, decB));
+      let ai = Math.round(a*scale), bi = Math.round(b*scale);
+      while(bi){let t=ai%bi; ai=bi; bi=t;} return ai/scale;
+    }
+
+    function simplifyRatio(w,h){ if(w===0||h===0) return [0,0];
+      // try to convert to integers by common scale
+      const s1 = String(w), s2 = String(h);
+      const d1 = s1.includes('.')? s1.split('.')[1].length:0;
+      const d2 = s2.includes('.')? s2.split('.')[1].length:0;
+      const scale = Math.pow(10, Math.max(d1,d2));
+      const wi = Math.round(w*scale); const hi = Math.round(h*scale);
+      const g = (function(a,b){a=Math.abs(a);b=Math.abs(b); while(b){let t=a%b; a=b; b=t;} return a;})(wi,hi);
+      return [wi/g, hi/g];
+    }
+
+    function toFixedNumber(n,dec){ if(!isFinite(n)) return '—'; return Number(Math.round(n*(Math.pow(10,dec)))/Math.pow(10,dec)).toFixed(dec); }
+
+    const origW = document.getElementById('origW');
+    const origH = document.getElementById('origH');
+    const calcRatio = document.getElementById('calcRatio');
+    const ratioSimple = document.getElementById('ratioSimple');
+    const ratioDecimal = document.getElementById('ratioDecimal');
+    const newW = document.getElementById('newW');
+    const newH = document.getElementById('newH');
+    const mode = document.getElementById('mode');
+    const precision = document.getElementById('precision');
+    const apply = document.getElementById('apply');
+    const finalResult = document.getElementById('finalResult');
+    const finalText = document.getElementById('finalText');
+    const finalNote = document.getElementById('finalNote');
+    const clearBtn = document.getElementById('clear');
+    const swapBtn = document.getElementById('swapWH');
+    const copyRatio = document.getElementById('copyRatio');
+
+    function updatePlaceholders(){ if(mode.value==='width'){ newW.placeholder = 'Digite a nova largura (W)'; newH.placeholder = 'Campo calculado automaticamente'; newH.value = ''; } else { newH.placeholder = 'Digite a nova altura (H)'; newW.placeholder = 'Campo calculado automaticamente'; newW.value = ''; } }
+    updatePlaceholders();
+    mode.addEventListener('change',()=>{ updatePlaceholders(); finalResult.style.display='none'; });
+
+    swapBtn.addEventListener('click',()=>{
+      const w=origW.value, h=origH.value; origW.value = h; origH.value = w; calcRatio.click();
+    });
+
+    clearBtn.addEventListener('click',()=>{
+      origW.value=''; origH.value=''; newW.value=''; newH.value=''; ratioSimple.textContent='—'; ratioDecimal.textContent='—'; finalResult.style.display='none';
+    });
+
+    calcRatio.addEventListener('click',()=>{
+      const w = parseFloat(origW.value), h = parseFloat(origH.value);
+      if(!isFinite(w) || !isFinite(h) || w<=0 || h<=0){ alert('Informe valores positivos para largura e altura originais.'); return; }
+      const [sw,sh] = simplifyRatio(w,h);
+      ratioSimple.textContent = sw + ' : ' + sh;
+      const dec = w/h;
+      ratioDecimal.textContent = toFixedNumber(dec,3) + ' (W ÷ H)';
+      finalResult.style.display='none';
+    });
+
+    apply.addEventListener('click',()=>{
+      const w = parseFloat(origW.value), h = parseFloat(origH.value);
+      if(!isFinite(w) || !isFinite(h) || w<=0 || h<=0){ alert('Primeiro calcule a proporção com largura e altura originais válidas.'); return; }
+      const dec = w/h; const prec = parseInt(precision.value,10);
+      if(mode.value==='width'){
+        const newWidth = parseFloat(newW.value);
+        if(!isFinite(newWidth) || newWidth<=0){ alert('Informe nova largura válida (maior que 0).'); return; }
+        const calcH = newWidth / dec;
+        newH.value = toFixedNumber(calcH, prec);
+        finalText.textContent = `W = ${newWidth} → H = ${toFixedNumber(calcH, prec)}`;
+        finalNote.textContent = `Proporção usada: ${ratioSimple.textContent}  (${toFixedNumber(dec,4)}). Precisão: ${prec} casas.`;
+      } else {
+        const newHeight = parseFloat(newH.value);
+        if(!isFinite(newHeight) || newHeight<=0){ alert('Informe nova altura válida (maior que 0).'); return; }
+        const calcW = newHeight * dec;
+        newW.value = toFixedNumber(calcW, prec);
+        finalText.textContent = `H = ${newHeight} → W = ${toFixedNumber(calcW, prec)}`;
+        finalNote.textContent = `Proporção usada: ${ratioSimple.textContent}  (${toFixedNumber(dec,4)}). Precisão: ${prec} casas.`;
+      }
+      finalResult.style.display='block';
+    });
+
+    copyRatio.addEventListener('click',async()=>{
+      const txt = `${ratioSimple.textContent} (decimal: ${ratioDecimal.textContent})`;
+      try{ await navigator.clipboard.writeText(txt); alert('Proporção copiada para a área de transferência.'); }catch(e){ prompt('Copie manualmente:', txt); }
+    });
+
+    // allow Enter to trigger actions
+    [origW, origH].forEach(el=>el.addEventListener('keydown', e=>{ if(e.key==='Enter') calcRatio.click(); }));
+    [newW,newH].forEach(el=>el.addEventListener('keydown', e=>{ if(e.key==='Enter') apply.click(); }));
+  </script>
+</body>
+</html>
